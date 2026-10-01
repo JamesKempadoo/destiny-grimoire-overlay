@@ -7,14 +7,16 @@
   <title>GrimoireLord Stream Overlay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
     }
 
-    html, body {
+    html,
+    body {
       background: transparent !important;
       margin: 0;
       padding: 0;
@@ -424,6 +426,11 @@
           <input type="text" id="modal-name-input" placeholder="e.g. GrimoireLord" required>
         </div>
 
+        <div class="modal-field">
+          <label for="modal-apikey-input">Bungie API Key (Optional Override)</label>
+          <input type="text" id="modal-apikey-input" placeholder="Default embedded key in use">
+        </div>
+
         <!-- Platform Toggle Group -->
         <div class="modal-field">
           <label>Platform / Console</label>
@@ -486,6 +493,7 @@
 
     const modalForm = document.getElementById('modal-form');
     const modalNameInput = document.getElementById('modal-name-input');
+    const modalApiKeyInput = document.getElementById('modal-apikey-input');
     const platformButtons = document.querySelectorAll('#platform-toggle-group .toggle-btn');
     const intervalButtons = document.querySelectorAll('#interval-toggle-group .toggle-btn');
     const customSecRow = document.getElementById('custom-sec-row');
@@ -556,7 +564,7 @@
       try {
         localStorage.setItem('grimoire_widget_w', w);
         localStorage.setItem('grimoire_widget_h', h);
-      } catch(e) {}
+      } catch (e) { }
     }
 
     function loadSavedSize() {
@@ -568,7 +576,7 @@
         } else {
           updateSize(320, 95);
         }
-      } catch(e) {
+      } catch (e) {
         updateSize(320, 95);
       }
     }
@@ -695,7 +703,31 @@
       animFrameId = requestAnimationFrame(update);
     }
 
-    const BUNGIE_API_KEY = '1e930b9b177d43b192c80baf7de61d11';
+    const INJECTED_BUNGIE_API_KEY = '__BUNGIE_API_KEY__';
+
+    function getApiKey() {
+      // 1. Check URL query parameters (?apikey=xxx or ?key=xxx)
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlKey = urlParams.get('apikey') || urlParams.get('api_key') || urlParams.get('key');
+        if (urlKey && urlKey.trim()) {
+          localStorage.setItem('grimoire_api_key', urlKey.trim());
+          return urlKey.trim();
+        }
+      } catch (e) {}
+
+      // 2. Check localStorage saved key
+      const customKey = localStorage.getItem('grimoire_api_key');
+      if (customKey && customKey.trim()) return customKey.trim();
+
+      // 3. Fallback to GitHub Actions injected secret (if used)
+      if (INJECTED_BUNGIE_API_KEY && !INJECTED_BUNGIE_API_KEY.startsWith('__')) {
+        return INJECTED_BUNGIE_API_KEY;
+      }
+
+      return '';
+    }
+
     let activeMembershipId = localStorage.getItem('grimoire_membership_id') || '4611686018558160946';
 
     async function fetchScore() {
@@ -716,14 +748,14 @@
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // 2. Fallback: Standalone Direct Bungie API call (for GitHub Pages static hosting)
       try {
         const platform = selectedPlatform || '1';
         const directUrl = `https://www.bungie.net/Platform/Destiny/Vanguard/Grimoire/${platform}/${activeMembershipId}/?_t=` + Date.now();
         const res = await fetch(directUrl, {
-          headers: { 'X-API-Key': BUNGIE_API_KEY }
+          headers: { 'X-API-Key': getApiKey() }
         });
         const json = await res.json();
         if (json.ErrorCode === 1 && json.Response?.data) {
@@ -739,6 +771,11 @@
     }
 
     async function loadActivePlayer() {
+      const savedApiKey = localStorage.getItem('grimoire_api_key');
+      if (modalApiKeyInput) {
+        modalApiKeyInput.value = savedApiKey || '';
+      }
+
       try {
         const res = await fetch('/api/player');
         if (res.ok) {
@@ -755,7 +792,7 @@
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       const savedName = localStorage.getItem('grimoire_player_name');
       if (savedName) modalNameInput.value = savedName;
@@ -791,6 +828,14 @@
       e.preventDefault();
       const name = modalNameInput.value.trim();
       const platform = selectedPlatform;
+      const customKey = modalApiKeyInput ? modalApiKeyInput.value.trim() : '';
+
+      if (customKey) {
+        localStorage.setItem('grimoire_api_key', customKey);
+      } else {
+        localStorage.removeItem('grimoire_api_key');
+      }
+
       if (!name) return;
 
       modalSubmitBtn.disabled = true;
@@ -810,13 +855,13 @@
             if (data.player?.membershipId) activeMembershipId = data.player.membershipId;
           }
         }
-      } catch (err) {}
+      } catch (err) { }
 
       if (!success) {
         // Direct Bungie search API fallback for GitHub Pages
         try {
           const searchUrl = `https://www.bungie.net/Platform/Destiny/SearchDestinyPlayer/${platform}/${encodeURIComponent(name)}/`;
-          const sRes = await fetch(searchUrl, { headers: { 'X-API-Key': BUNGIE_API_KEY } });
+          const sRes = await fetch(searchUrl, { headers: { 'X-API-Key': getApiKey() } });
           const sJson = await sRes.json();
           if (sJson.ErrorCode === 1 && sJson.Response && sJson.Response.length > 0) {
             const match = sJson.Response[0];
