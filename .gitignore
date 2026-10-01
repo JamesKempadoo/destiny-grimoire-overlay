@@ -1,0 +1,11 @@
+# Environment & API Key secrets
+.env
+
+# Dependencies & System
+node_modules/
+.DS_Store
+*.log
+
+# IDE & Artifacts
+.vscode/
+.idea/

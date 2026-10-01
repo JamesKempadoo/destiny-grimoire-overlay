@@ -1,0 +1,20 @@
+{
+  "name": "grimoire-stream-overlay",
+  "version": "1.0.0",
+  "description": "Destiny 1 Grimoire Stream Overlay for OBS / Streamlabs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "stop": "pkill -f 'node server.js' || true"
+  },
+  "keywords": [
+    "destiny",
+    "destiny1",
+    "grimoire",
+    "obs",
+    "stream-overlay"
+  ],
+  "author": "",
+  "license": "MIT"
+}

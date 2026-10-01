@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Destiny Grimoire Overlay - Settings & Configuration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: #18181b;
+      --border: #27272a;
+      --border-hover: #3f3f46;
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent: #d4d4d8;
+      --accent-gold: #eab308;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--success);
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 550px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    input[type="text"], select {
+      background: #09090b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent-gold);
+    }
+
+    .btn {
+      background: #27272a;
+      color: var(--text);
+      border: 1px solid var(--border-hover);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+    }
+
+    .btn-primary {
+      background: var(--accent-gold);
+      color: #000000;
+      border: none;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: #facc15;
+    }
+
+    .stats-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: #09090b;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+    }
+
+    .stat-box {
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: 'VT323', monospace;
+      font-size: 2.2rem;
+      color: var(--accent-gold);
+      line-height: 1;
+    }
+
+    .stat-lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .divider-vertical {
+      width: 1px;
+      height: 32px;
+      background: var(--border);
+    }
+
+    .message {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .message.success {
+      color: var(--success);
+    }
+
+    .message.error {
+      color: var(--error);
+    }
+
+    .url-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .url-row input {
+      flex: 1;
+    }
+
+    .preview-box {
+      width: 100%;
+      height: 120px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #000000;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1 class="title">Destiny 1 Grimoire Overlay Configuration</h1>
+      <span class="status-badge">Service Running</span>
+    </header>
+
+    <!-- Player & Platform Configuration Card -->
+    <div class="card">
+      <div class="card-title">Target Player & Platform</div>
+      <form id="player-form">
+        <div class="form-grid">
+          <div class="field">
+            <label for="player-input">GamerTag / Display Name</label>
+            <input type="text" id="player-input" placeholder="e.g. GrimoireLord" required>
+          </div>
+          <div class="field">
+            <label for="platform-select">Platform / Console</label>
+            <select id="platform-select">
+              <option value="1">Xbox Live</option>
+              <option value="2">PlayStation Network</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between;">
+          <button type="submit" id="update-player-btn" class="btn btn-primary">Update Target Player</button>
+          <span id="player-msg" class="message"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Active Stats Summary & Controls Card -->
+    <div class="card">
+      <div class="card-title">Live Stats & Refresh Controls</div>
+      
+      <div class="stats-summary">
+        <div class="stat-box">
+          <div id="stat-score" class="stat-num">---</div>
+          <div class="stat-lbl">Grimoire Score</div>
+        </div>
+        <div class="divider-vertical"></div>
+        <div class="stat-box">
+          <div id="stat-cards" class="stat-num">---</div>
+          <div class="stat-lbl">Cards Unlocked</div>
+        </div>
+        <div class="divider-vertical"></div>
+        <div class="stat-box">
+          <div id="stat-player" style="font-weight: 600; font-size: 1rem; color: var(--text);">---</div>
+          <div class="stat-lbl" id="stat-platform">Active Player</div>
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-top: 8px;">
+        <div class="field">
+          <label for="interval-select">Auto-Refresh Interval</label>
+          <select id="interval-select">
+            <option value="5">Every 5 Seconds</option>
+            <option value="10">Every 10 Seconds</option>
+            <option value="15" selected>Every 15 Seconds (Default)</option>
+            <option value="30">Every 30 Seconds</option>
+            <option value="60">Every 60 Seconds</option>
+            <option value="0">Disabled (Manual Only)</option>
+          </select>
+        </div>
+        <div class="field" style="justify-content: flex-end;">
+          <button id="force-refresh-btn" class="btn">Force Refresh Now</button>
+        </div>
+      </div>
+      <div id="refresh-msg" class="message">Auto-refresh active (15s).</div>
+    </div>
+
+    <!-- OBS Browser Source Configuration Card -->
+    <div class="card">
+      <div class="card-title">OBS / Streamlabs Browser Source</div>
+      <div class="url-row">
+        <input type="text" id="obs-url" value="http://localhost:3000" readonly>
+        <button id="copy-btn" class="btn">Copy URL</button>
+      </div>
+      <span class="message">Add a Browser Source in OBS Studio with width 360 and height 120.</span>
+
+      <div class="card-title" style="margin-top: 12px; font-size: 0.8rem; border-bottom: none; padding-bottom: 0;">Stream Overlay Live Preview</div>
+      <iframe id="preview-iframe" src="/stream.html" class="preview-box" frameborder="0"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const playerForm = document.getElementById('player-form');
+    const playerInput = document.getElementById('player-input');
+    const platformSelect = document.getElementById('platform-select');
+    const updatePlayerBtn = document.getElementById('update-player-btn');
+    const playerMsg = document.getElementById('player-msg');
+
+    const statScore = document.getElementById('stat-score');
+    const statCards = document.getElementById('stat-cards');
+    const statPlayer = document.getElementById('stat-player');
+    const statPlatform = document.getElementById('stat-platform');
+
+    const intervalSelect = document.getElementById('interval-select');
+    const forceRefreshBtn = document.getElementById('force-refresh-btn');
+    const refreshMsg = document.getElementById('refresh-msg');
+
+    const obsUrl = document.getElementById('obs-url');
+    const copyBtn = document.getElementById('copy-btn');
+    const previewIframe = document.getElementById('preview-iframe');
+
+    let pollTimer = null;
+
+    async function loadActivePlayerInfo() {
+      try {
+        const res = await fetch('/api/player');
+        const data = await res.json();
+        if (data.success && data.player) {
+          playerInput.value = data.player.displayName;
+          platformSelect.value = data.player.membershipType;
+          statPlayer.textContent = data.player.displayName;
+          statPlatform.textContent = data.player.membershipType === '1' ? 'Xbox Live' : 'PlayStation Network';
+        }
+      } catch (err) {
+        console.error('Error fetching player info:', err);
+      }
+    }
+
+    async function fetchLatestStats() {
+      refreshMsg.textContent = 'Updating stats...';
+      try {
+        const res = await fetch('/api/grimoire');
+        const data = await res.json();
+        if (data.success) {
+          statScore.textContent = (data.grimoireScore ?? 0).toLocaleString();
+          statCards.textContent = (data.cardCount ?? 0).toLocaleString();
+          statPlayer.textContent = data.displayName || 'Player';
+          statPlatform.textContent = data.membershipType === '1' ? 'Xbox Live' : 'PlayStation Network';
+          const time = new Date().toLocaleTimeString();
+          refreshMsg.textContent = `Last updated at ${time}.`;
+          if (previewIframe) previewIframe.src = previewIframe.src;
+        } else {
+          refreshMsg.textContent = `Error: ${data.error || 'Failed to fetch score'}`;
+        }
+      } catch (err) {
+        refreshMsg.textContent = 'Connection error.';
+      }
+    }
+
+    playerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = playerInput.value.trim();
+      const platform = platformSelect.value;
+      if (!name) return;
+
+      updatePlayerBtn.disabled = true;
+      playerMsg.className = 'message';
+      playerMsg.textContent = 'Searching Bungie API...';
+
+      try {
+        const res = await fetch('/api/player', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, platform })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          playerMsg.className = 'message success';
+          playerMsg.textContent = `Updated to ${data.player.displayName}!`;
+          statPlayer.textContent = data.player.displayName;
+          statPlatform.textContent = data.player.membershipType === '1' ? 'Xbox Live' : 'PlayStation Network';
+          await fetchLatestStats();
+        } else {
+          playerMsg.className = 'message error';
+          playerMsg.textContent = data.error || 'Player not found.';
+        }
+      } catch (err) {
+        playerMsg.className = 'message error';
+        playerMsg.textContent = 'Error connecting to server.';
+      } finally {
+        updatePlayerBtn.disabled = false;
+      }
+    });
+
+    forceRefreshBtn.addEventListener('click', () => {
+      fetchLatestStats();
+      setupPolling(intervalSelect.value);
+    });
+
+    intervalSelect.addEventListener('change', (e) => {
+      setupPolling(e.target.value);
+      refreshMsg.textContent = `Auto-refresh interval set to ${e.target.value}s.`;
+    });
+
+    function setupPolling(seconds) {
+      if (pollTimer) clearInterval(pollTimer);
+      const sec = parseInt(seconds, 10);
+      if (sec > 0) {
+        pollTimer = setInterval(fetchLatestStats, sec * 1000);
+      }
+    }
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(obsUrl.value);
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => copyBtn.textContent = 'Copy URL', 2000);
+    });
+
+    // Initialize
+    loadActivePlayerInfo();
+    fetchLatestStats();
+    setupPolling(intervalSelect.value);
+  </script>
+</body>
+
+</html>
