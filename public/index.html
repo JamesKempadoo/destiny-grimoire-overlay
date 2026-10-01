@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GrimoireLord Stream Overlay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    html,
+    body {
+      background: transparent !important;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'VT323', monospace;
+    }
+
+    .overlay-row {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px;
+      position: relative;
+    }
+
+    /* Resizable Container Wrapper - overflow: hidden is REQUIRED for CSS resize: both */
+    .widget-wrapper {
+      position: relative;
+      resize: both;
+      overflow: hidden;
+      width: 320px;
+      height: 95px;
+      min-width: 160px;
+      min-height: 50px;
+      max-width: 100vw;
+      max-height: 100vh;
+      container-type: inline-size;
+      padding: 2px;
+    }
+
+    .stream-widget {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      gap: 3cqw;
+      padding: 3cqw 4cqw;
+      background: rgba(10, 14, 22, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 0.4cqw solid rgba(255, 215, 0, 0.45);
+      border-radius: 3cqw;
+      box-shadow: 0 1.5cqw 4cqw rgba(0, 0, 0, 0.5), 0 0 3cqw rgba(255, 215, 0, 0.25);
+    }
+
+    .widget-info {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      width: 100%;
+      gap: 3cqw;
+    }
+
+    .stat-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-family: 'VT323', monospace;
+      font-size: 5.5cqw;
+      color: #ffd700;
+      letter-spacing: 0.2cqw;
+      text-transform: uppercase;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .score-value {
+      font-family: 'VT323', monospace;
+      font-size: 14cqw;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: 0.3cqw;
+      text-shadow: 0 0 2.5cqw rgba(255, 215, 0, 0.8), 0 0 1cqw rgba(255, 215, 0, 0.4);
+      transition: color 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .cards-value {
+      font-family: 'VT323', monospace;
+      font-size: 14cqw;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: 0.3cqw;
+      text-shadow: none;
+      white-space: nowrap;
+    }
+
+    .divider {
+      width: 0.35cqw;
+      height: 14cqw;
+      min-width: 1px;
+      background: rgba(255, 215, 0, 0.35);
+    }
+
+    /* Gear Button: hidden (opacity 0) by default, appears on hover */
+    .gear-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(10, 14, 22, 0.85);
+      border: 1px solid rgba(255, 215, 0, 0.6);
+      color: #ffd700;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .widget-wrapper:hover .gear-btn,
+    .gear-btn:focus,
+    .gear-btn:hover {
+      opacity: 0.95;
+    }
+
+    .gear-btn:hover {
+      transform: rotate(45deg);
+      background: rgba(255, 215, 0, 0.25);
+    }
+
+    /* Custom Corner Drag Handle Sizer (hidden when not hovering) */
+    .resize-handle {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 18px;
+      height: 18px;
+      color: #ffd700;
+      font-size: 12px;
+      line-height: 18px;
+      text-align: center;
+      cursor: se-resize;
+      z-index: 1000;
+      user-select: none;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .widget-wrapper:hover .resize-handle,
+    .resize-handle:hover {
+      opacity: 0.95;
+      pointer-events: auto;
+      transform: scale(1.25);
+    }
+
+    /* Settings Popout Drawer (Sits nicely to the RIGHT of the resizable widget) */
+    .settings-modal {
+      width: 270px;
+      background: rgba(12, 16, 24, 0.96);
+      border: 1.5px solid #ffd700;
+      border-radius: 12px;
+      padding: 12px 16px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .settings-modal.hidden {
+      display: none;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+      padding-bottom: 6px;
+      font-weight: 600;
+      color: #ffd700;
+      font-size: 0.8rem;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: #ffffff;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .modal-field label {
+      color: #a1a1aa;
+      font-size: 0.7rem;
+    }
+
+    .modal-field input[type="text"],
+    .modal-field input[type="number"] {
+      background: #09090b;
+      border: 1px solid #27272a;
+      color: #ffffff;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .modal-field input:focus {
+      border-color: #ffd700;
+    }
+
+    /* Sizer Controls */
+    .sizer-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .size-btn {
+      flex: 1;
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      color: #ffd700;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .size-btn:hover {
+      background: rgba(255, 215, 0, 0.2);
+      border-color: #ffd700;
+      color: #ffffff;
+    }
+
+    /* Custom Button Toggles for OBS CEF compatibility */
+    .toggle-group {
+      display: flex;
+      gap: 4px;
+      background: #09090b;
+      padding: 2px;
+      border-radius: 4px;
+      border: 1px solid #27272a;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      padding: 4px 6px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .toggle-btn.active {
+      background: #ffd700;
+      color: #000000;
+      font-weight: 600;
+    }
+
+    .custom-sec-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .custom-sec-row input[type="number"] {
+      width: 75px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .modal-save-btn {
+      flex: 1;
+      background: #ffd700;
+      color: #000000;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .modal-save-btn:hover {
+      background: #ffe57f;
+    }
+
+    .modal-refresh-btn {
+      background: #27272a;
+      color: #ffffff;
+      border: 1px solid #3f3f46;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .modal-refresh-btn:hover {
+      background: #3f3f46;
+    }
+
+    .modal-msg {
+      font-size: 0.7rem;
+      color: #22c55e;
+      text-align: center;
+    }
+
+    .widget-wrapper::-webkit-resizer {
+      background-color: transparent;
+      border-radius: 2px;
+    }
+
+    .widget-wrapper:hover::-webkit-resizer {
+      background-color: rgba(255, 215, 0, 0.5);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="overlay-row">
+    <!-- Resizable Container Wrapper (overflow: hidden enables CSS resize: both) -->
+    <div class="widget-wrapper" id="widget-wrapper">
+      <button id="gear-btn" class="gear-btn" title="Click to open settings">⚙</button>
+
+      <div class="stream-widget" id="stream-widget" title="Double-click to open settings">
+        <div class="widget-info">
+          <div class="stat-row">
+            <!-- Grimoire Score Box -->
+            <div class="stat-box">
+              <div class="stat-label">Grimoire Score</div>
+              <div id="grimoire-score" class="score-value">---</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Cards Unlocked Box -->
+            <div class="stat-box">
+              <div class="stat-label">Cards Unlocked</div>
+              <div id="card-count" class="cards-value">---</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Custom Drag Corner Sizer -->
+      <div id="resize-handle" class="resize-handle" title="Click & drag corner to scale bubble">◢</div>
+    </div>
+
+    <!-- In-Overlay Settings Popout Drawer (Pops out to the RIGHT, unclipped!) -->
+    <div id="settings-modal" class="settings-modal hidden">
+      <div class="modal-header">
+        <span>OVERLAY SETTINGS</span>
+        <button id="close-modal-btn" class="close-btn">&times;</button>
+      </div>
+      <form id="modal-form" class="modal-form">
+        <div class="modal-field">
+          <label for="modal-name-input">GamerTag / Display Name</label>
+          <input type="text" id="modal-name-input" placeholder="e.g. GrimoireLord" required>
+        </div>
+
+        <div class="modal-field">
+          <label for="modal-apikey-input">Bungie API Key (Optional Override)</label>
+          <input type="text" id="modal-apikey-input" placeholder="Default embedded key in use">
+        </div>
+
+        <!-- Platform Toggle Group -->
+        <div class="modal-field">
+          <label>Platform / Console</label>
+          <div class="toggle-group" id="platform-toggle-group">
+            <button type="button" class="toggle-btn active" data-platform="1">Xbox Live</button>
+            <button type="button" class="toggle-btn" data-platform="2">PlayStation</button>
+          </div>
+        </div>
+
+        <!-- Bubble Size Control Group -->
+        <div class="modal-field">
+          <label>Bubble Size (<span id="size-readout">320px × 95px</span>)</label>
+          <div class="sizer-controls">
+            <button type="button" id="size-dec-btn" class="size-btn" title="Decrease bubble size">➖ Smaller</button>
+            <button type="button" id="size-inc-btn" class="size-btn" title="Increase bubble size">➕ Bigger</button>
+          </div>
+          <div class="toggle-group" id="size-preset-group" style="margin-top: 4px;">
+            <button type="button" class="toggle-btn" data-width="240" data-height="71">Small</button>
+            <button type="button" class="toggle-btn active" data-width="320" data-height="95">Med</button>
+            <button type="button" class="toggle-btn" data-width="420" data-height="125">Large</button>
+            <button type="button" class="toggle-btn" data-width="540" data-height="160">XL</button>
+          </div>
+        </div>
+
+        <!-- Auto-Refresh Rate Group -->
+        <div class="modal-field">
+          <label>Auto-Refresh Rate</label>
+          <div class="toggle-group" id="interval-toggle-group">
+            <button type="button" class="toggle-btn" data-interval="5">5s</button>
+            <button type="button" class="toggle-btn" data-interval="10">10s</button>
+            <button type="button" class="toggle-btn active" data-interval="15">15s</button>
+            <button type="button" class="toggle-btn" data-interval="30">30s</button>
+            <button type="button" class="toggle-btn" data-interval="custom">Custom</button>
+            <button type="button" class="toggle-btn" data-interval="0">Off</button>
+          </div>
+          <div class="custom-sec-row hidden" id="custom-sec-row">
+            <label for="custom-seconds-input">Custom Seconds:</label>
+            <input type="number" id="custom-seconds-input" min="1" max="3600" value="15">
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" id="force-ref-btn" class="modal-refresh-btn">🔄 Refresh</button>
+          <button type="submit" id="modal-submit-btn" class="modal-save-btn">Save & Close</button>
+        </div>
+        <div id="modal-msg" class="modal-msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const scoreEl = document.getElementById('grimoire-score');
+    const cardEl = document.getElementById('card-count');
+    const gearBtn = document.getElementById('gear-btn');
+    const streamWidget = document.getElementById('stream-widget');
+    const widgetWrapper = document.getElementById('widget-wrapper');
+    const resizeHandle = document.getElementById('resize-handle');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    const modalForm = document.getElementById('modal-form');
+    const modalNameInput = document.getElementById('modal-name-input');
+    const modalApiKeyInput = document.getElementById('modal-apikey-input');
+    const platformButtons = document.querySelectorAll('#platform-toggle-group .toggle-btn');
+    const intervalButtons = document.querySelectorAll('#interval-toggle-group .toggle-btn');
+    const customSecRow = document.getElementById('custom-sec-row');
+    const customSecondsInput = document.getElementById('custom-seconds-input');
+
+    const sizeDecBtn = document.getElementById('size-dec-btn');
+    const sizeIncBtn = document.getElementById('size-inc-btn');
+    const sizeReadout = document.getElementById('size-readout');
+    const sizePresetButtons = document.querySelectorAll('#size-preset-group .toggle-btn');
+
+    const modalSubmitBtn = document.getElementById('modal-submit-btn');
+    const forceRefBtn = document.getElementById('force-ref-btn');
+    const modalMsg = document.getElementById('modal-msg');
+
+    let selectedPlatform = '1';
+    let selectedInterval = '15';
+    let currentScore = 0;
+    let animFrameId = null;
+    let pollTimer = null;
+
+    const ASPECT_RATIO = 320 / 95;
+
+    // Platform toggle buttons
+    platformButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        platformButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPlatform = btn.dataset.platform;
+      });
+    });
+
+    // Interval toggle buttons
+    intervalButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        intervalButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedInterval = btn.dataset.interval;
+
+        if (selectedInterval === 'custom') {
+          customSecRow.classList.remove('hidden');
+        } else {
+          customSecRow.classList.add('hidden');
+        }
+      });
+    });
+
+    // Sizer logic
+    function updateSize(width, height) {
+      const w = Math.max(160, Math.min(1200, Math.round(width)));
+      const h = Math.max(50, Math.min(400, Math.round(height)));
+
+      widgetWrapper.style.width = `${w}px`;
+      widgetWrapper.style.height = `${h}px`;
+
+      if (sizeReadout) {
+        sizeReadout.textContent = `${w}px × ${h}px`;
+      }
+
+      sizePresetButtons.forEach(btn => {
+        const pw = parseInt(btn.dataset.width, 10);
+        if (Math.abs(pw - w) < 20) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      try {
+        localStorage.setItem('grimoire_widget_w', w);
+        localStorage.setItem('grimoire_widget_h', h);
+      } catch (e) { }
+    }
+
+    function loadSavedSize() {
+      try {
+        const savedW = localStorage.getItem('grimoire_widget_w');
+        const savedH = localStorage.getItem('grimoire_widget_h');
+        if (savedW && savedH) {
+          updateSize(parseInt(savedW, 10), parseInt(savedH, 10));
+        } else {
+          updateSize(320, 95);
+        }
+      } catch (e) {
+        updateSize(320, 95);
+      }
+    }
+
+    sizeIncBtn.addEventListener('click', () => {
+      const currentW = widgetWrapper.offsetWidth;
+      const newW = currentW * 1.15;
+      const newH = newW / ASPECT_RATIO;
+      updateSize(newW, newH);
+    });
+
+    sizeDecBtn.addEventListener('click', () => {
+      const currentW = widgetWrapper.offsetWidth;
+      const newW = currentW * 0.85;
+      const newH = newW / ASPECT_RATIO;
+      updateSize(newW, newH);
+    });
+
+    sizePresetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const w = parseInt(btn.dataset.width, 10);
+        const h = parseInt(btn.dataset.height, 10);
+        updateSize(w, h);
+      });
+    });
+
+    // Drag corner sizer handler (Mouse & Touch)
+    let isResizing = false;
+    let startX = 0;
+    let startY = 0;
+    let startW = 0;
+    let startH = 0;
+
+    function onStartDrag(e) {
+      isResizing = true;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      startX = clientX;
+      startY = clientY;
+      startW = widgetWrapper.offsetWidth;
+      startH = widgetWrapper.offsetHeight;
+      document.body.style.cursor = 'se-resize';
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    function onMoveDrag(e) {
+      if (!isResizing) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+
+      let newW = startW + dx;
+      let newH = startH + dy;
+      updateSize(newW, newH);
+    }
+
+    function onStopDrag() {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+      }
+    }
+
+    resizeHandle.addEventListener('mousedown', onStartDrag);
+    resizeHandle.addEventListener('touchstart', onStartDrag, { passive: false });
+    window.addEventListener('mousemove', onMoveDrag);
+    window.addEventListener('touchmove', onMoveDrag, { passive: false });
+    window.addEventListener('mouseup', onStopDrag);
+    window.addEventListener('touchend', onStopDrag);
+
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          const w = Math.round(entry.contentRect.width);
+          const h = Math.round(entry.contentRect.height);
+          if (w > 0 && h > 0 && sizeReadout) {
+            sizeReadout.textContent = `${w}px × ${h}px`;
+          }
+        }
+      });
+      observer.observe(widgetWrapper);
+    }
+
+    function getEffectiveInterval() {
+      if (selectedInterval === 'custom') {
+        const val = parseInt(customSecondsInput.value, 10);
+        return isNaN(val) || val <= 0 ? 15 : val;
+      }
+      return parseInt(selectedInterval, 10);
+    }
+
+    function animateScore(start, end) {
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+
+      if (start === 0 || start === end) {
+        scoreEl.textContent = end.toLocaleString();
+        currentScore = end;
+        return;
+      }
+
+      const startTime = performance.now();
+      scoreEl.classList.add('flash');
+
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / 1000, 1);
+        const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const val = Math.floor(start + (end - start) * ease);
+        scoreEl.textContent = val.toLocaleString();
+
+        if (progress < 1) {
+          animFrameId = requestAnimationFrame(update);
+        } else {
+          scoreEl.textContent = end.toLocaleString();
+          animFrameId = null;
+          setTimeout(() => scoreEl.classList.remove('flash'), 1000);
+        }
+      }
+      animFrameId = requestAnimationFrame(update);
+    }
+
+    const INJECTED_BUNGIE_API_KEY = '__BUNGIE_API_KEY__';
+
+    function getApiKey() {
+      // 1. Check URL query parameters (?apikey=xxx or ?key=xxx)
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlKey = urlParams.get('apikey') || urlParams.get('api_key') || urlParams.get('key');
+        if (urlKey && urlKey.trim()) {
+          localStorage.setItem('grimoire_api_key', urlKey.trim());
+          return urlKey.trim();
+        }
+      } catch (e) {}
+
+      // 2. Check localStorage saved key
+      const customKey = localStorage.getItem('grimoire_api_key');
+      if (customKey && customKey.trim()) return customKey.trim();
+
+      // 3. Fallback to GitHub Actions injected secret (if used)
+      if (INJECTED_BUNGIE_API_KEY && !INJECTED_BUNGIE_API_KEY.startsWith('__')) {
+        return INJECTED_BUNGIE_API_KEY;
+      }
+
+      return '';
+    }
+
+    let activeMembershipId = localStorage.getItem('grimoire_membership_id') || '4611686018558160946';
+
+    async function fetchScore() {
+      // 1. Try local server proxy (/api/grimoire)
+      try {
+        const res = await fetch('/api/grimoire?_t=' + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            if (typeof data.grimoireScore === 'number') {
+              animateScore(currentScore, data.grimoireScore);
+              currentScore = data.grimoireScore;
+            }
+            if (typeof data.cardCount === 'number') {
+              cardEl.textContent = data.cardCount.toLocaleString();
+            }
+            if (data.membershipId) activeMembershipId = data.membershipId;
+            return;
+          }
+        }
+      } catch (e) { }
+
+      // 2. Fallback: Standalone Direct Bungie API call (for GitHub Pages static hosting)
+      try {
+        const platform = selectedPlatform || '1';
+        const directUrl = `https://www.bungie.net/Platform/Destiny/Vanguard/Grimoire/${platform}/${activeMembershipId}/?_t=` + Date.now();
+        const res = await fetch(directUrl, {
+          headers: { 'X-API-Key': getApiKey() }
+        });
+        const json = await res.json();
+        if (json.ErrorCode === 1 && json.Response?.data) {
+          const score = json.Response.data.score || 0;
+          const cards = json.Response.data.cardCollection?.length || 0;
+          animateScore(currentScore, score);
+          currentScore = score;
+          cardEl.textContent = cards.toLocaleString();
+        }
+      } catch (err) {
+        console.error('Direct Bungie API fetch error:', err);
+      }
+    }
+
+    async function loadActivePlayer() {
+      const savedApiKey = localStorage.getItem('grimoire_api_key');
+      if (modalApiKeyInput) {
+        modalApiKeyInput.value = savedApiKey || '';
+      }
+
+      try {
+        const res = await fetch('/api/player');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.player) {
+            modalNameInput.value = data.player.displayName;
+            selectedPlatform = data.player.membershipType || '1';
+            activeMembershipId = data.player.membershipId || activeMembershipId;
+
+            platformButtons.forEach(b => {
+              if (b.dataset.platform === selectedPlatform) b.classList.add('active');
+              else b.classList.remove('active');
+            });
+            return;
+          }
+        }
+      } catch (e) { }
+
+      const savedName = localStorage.getItem('grimoire_player_name');
+      if (savedName) modalNameInput.value = savedName;
+    }
+
+    function setupPolling(seconds) {
+      if (pollTimer) clearInterval(pollTimer);
+      if (seconds > 0) {
+        pollTimer = setInterval(fetchScore, seconds * 1000);
+      }
+    }
+
+    function openModal() {
+      loadActivePlayer();
+      settingsModal.classList.remove('hidden');
+    }
+
+    gearBtn.addEventListener('click', openModal);
+    streamWidget.addEventListener('dblclick', openModal);
+
+    closeModalBtn.addEventListener('click', () => {
+      settingsModal.classList.add('hidden');
+    });
+
+    forceRefBtn.addEventListener('click', () => {
+      fetchScore();
+      modalMsg.textContent = 'Refreshed!';
+      setTimeout(() => modalMsg.textContent = '', 1500);
+    });
+
+    // Form Submit
+    modalForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = modalNameInput.value.trim();
+      const platform = selectedPlatform;
+      const customKey = modalApiKeyInput ? modalApiKeyInput.value.trim() : '';
+
+      if (customKey) {
+        localStorage.setItem('grimoire_api_key', customKey);
+      } else {
+        localStorage.removeItem('grimoire_api_key');
+      }
+
+      if (!name) return;
+
+      modalSubmitBtn.disabled = true;
+      modalMsg.textContent = 'Updating player...';
+
+      let success = false;
+      try {
+        const res = await fetch('/api/player', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, platform })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            success = true;
+            if (data.player?.membershipId) activeMembershipId = data.player.membershipId;
+          }
+        }
+      } catch (err) { }
+
+      if (!success) {
+        // Direct Bungie search API fallback for GitHub Pages
+        try {
+          const searchUrl = `https://www.bungie.net/Platform/Destiny/SearchDestinyPlayer/${platform}/${encodeURIComponent(name)}/`;
+          const sRes = await fetch(searchUrl, { headers: { 'X-API-Key': getApiKey() } });
+          const sJson = await sRes.json();
+          if (sJson.ErrorCode === 1 && sJson.Response && sJson.Response.length > 0) {
+            const match = sJson.Response[0];
+            activeMembershipId = match.membershipId;
+            localStorage.setItem('grimoire_membership_id', match.membershipId);
+            localStorage.setItem('grimoire_player_name', match.displayName);
+            success = true;
+          } else {
+            modalMsg.textContent = sJson.Message || `No player found named '${name}'.`;
+          }
+        } catch (err) {
+          modalMsg.textContent = 'Bungie API lookup error.';
+        }
+      }
+
+      modalSubmitBtn.disabled = false;
+
+      if (success) {
+        modalMsg.textContent = 'Updated!';
+        const seconds = getEffectiveInterval();
+        setupPolling(seconds);
+        await fetchScore();
+        setTimeout(() => {
+          settingsModal.classList.add('hidden');
+          modalMsg.textContent = '';
+        }, 600);
+      }
+    });
+
+    // Hotkey 'R' for manual refresh, 'Esc' to close settings
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') fetchScore();
+      if (e.key === 'Escape') settingsModal.classList.add('hidden');
+    });
+
+    // Initial load
+    loadSavedSize();
+    fetchScore();
+    setupPolling(getEffectiveInterval());
+  </script>
+</body>
+
+</html>

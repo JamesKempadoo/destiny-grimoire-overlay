@@ -1,0 +1,296 @@
+/* ==========================================================================
+   Destiny 1 Grimoire Stream Overlay - Stylesheet
+   Designed for OBS Studio & Streamlabs Browser Sources
+   ========================================================================== */
+
+:root {
+  --gold-primary: #ffd700;
+  --gold-light: #ffe57f;
+  --gold-dark: #b8860b;
+  --gold-glow: rgba(255, 215, 0, 0.4);
+  --text-primary: #ffffff;
+  --text-muted: #a0aab5;
+  --bg-glass: rgba(12, 16, 24, 0.75);
+  --border-gold: rgba(255, 215, 0, 0.35);
+  --font-title: 'Orbitron', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  background: transparent !important;
+  margin: 0;
+  padding: 16px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Base Card Container */
+.overlay-card {
+  width: 340px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Theme Options */
+.overlay-card.style-transparent {
+  background: rgba(10, 14, 20, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid var(--border-gold);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
+              0 0 15px var(--gold-glow);
+}
+
+.overlay-card.style-glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7),
+              0 0 20px rgba(255, 215, 0, 0.25);
+}
+
+.overlay-card.style-glow {
+  background: linear-gradient(135deg, rgba(16, 20, 28, 0.85) 0%, rgba(8, 10, 15, 0.9) 100%);
+  border: 1.5px solid var(--gold-primary);
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.3),
+              inset 0 0 15px rgba(255, 215, 0, 0.15);
+}
+
+.overlay-card.style-solid {
+  background: #0d1117;
+  border: 2px solid var(--gold-dark);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+/* Header Section */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.live-dot.updating {
+  background: var(--gold-primary);
+  box-shadow: 0 0 12px var(--gold-primary);
+  animation: spin-dot 0.8s linear infinite;
+}
+
+/* Control Buttons */
+.control-actions {
+
+  display: flex;
+  gap: 6px;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.overlay-card:hover .control-actions {
+  opacity: 1;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: var(--gold-primary);
+  color: #000;
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.icon-btn.spinning .refresh-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Main Body Display */
+.score-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.grimoire-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0px); }
+}
+
+.score-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.score-label {
+  font-family: var(--font-title);
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.score-number-container {
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.score-value {
+  font-family: var(--font-title);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.6),
+               0 0 30px rgba(255, 215, 0, 0.3);
+  transition: color 0.3s ease;
+}
+
+.score-value.updated-flash {
+  animation: flash-gold 1s ease-out;
+}
+
+@keyframes flash-gold {
+  0% { color: #ffffff; text-shadow: 0 0 30px #ffffff, 0 0 50px var(--gold-primary); transform: scale(1.08); }
+  100% { color: var(--text-primary); transform: scale(1); }
+}
+
+/* Settings Panel Drawer */
+.settings-drawer {
+
+  background: rgba(15, 18, 26, 0.95);
+  border: 1px solid var(--gold-primary);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.8rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+}
+
+.settings-drawer.hidden {
+  display: none;
+}
+
+.settings-title {
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  color: var(--gold-primary);
+  letter-spacing: 1px;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  padding-bottom: 4px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-item label {
+  color: var(--text-primary);
+}
+
+.setting-item select {
+  background: #1a202c;
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+}
+
+.settings-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 4px;
+}
+
+kbd {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: var(--gold-primary);
+  font-family: monospace;
+}
+
+/* Compact Mode */
+.overlay-card.compact {
+  width: auto;
+  display: inline-flex;
+  padding: 10px 16px;
+  gap: 10px;
+}
+
+.overlay-card.compact .card-header,
+.overlay-card.compact .card-footer,
+.overlay-card.compact .score-label {
+  display: none;
+}
+
+.overlay-card.compact .score-value {
+  font-size: 1.8rem;
+}
