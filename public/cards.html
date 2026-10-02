@@ -594,24 +594,47 @@
       }
     } catch (e) {}
 
-    // Check & schedule auto-expiration for NEW card badges after 60 seconds (1 minute)
-    const NEW_BADGE_DURATION_MS = 60000;
-    Object.keys(newCardTimestamps).forEach(idStr => {
-      const elapsed = Date.now() - (newCardTimestamps[idStr] || 0);
-      if (elapsed >= NEW_BADGE_DURATION_MS) {
-        newCardIds.delete(idStr);
-        delete newCardTimestamps[idStr];
-      } else {
-        scheduleNewCardExpiration(idStr, NEW_BADGE_DURATION_MS - elapsed);
+    // Read NEW Card Badge Auto-Clear Duration setting from LocalStorage
+    function getNewBadgeDurationMs() {
+      const saved = localStorage.getItem('grimoire_new_badge_duration_sec');
+      if (saved !== null) {
+        const sec = parseInt(saved, 10);
+        if (isNaN(sec) || sec <= 0) return 0; // 0 means OFF (auto-clear disabled)
+        return sec * 1000;
       }
-    });
+      return 60000; // Default: 60 seconds (1 minute)
+    }
+
+    // Check & schedule auto-expiration for NEW card badges based on user setting
+    const initialBadgeDurationMs = getNewBadgeDurationMs();
+    if (initialBadgeDurationMs > 0) {
+      Object.keys(newCardTimestamps).forEach(idStr => {
+        const elapsed = Date.now() - (newCardTimestamps[idStr] || 0);
+        if (elapsed >= initialBadgeDurationMs) {
+          newCardIds.delete(idStr);
+          delete newCardTimestamps[idStr];
+        } else {
+          scheduleNewCardExpiration(idStr, initialBadgeDurationMs - elapsed);
+        }
+      });
+    }
     localStorage.setItem(KEY_NEW_IDS, JSON.stringify(Array.from(newCardIds)));
     localStorage.setItem(KEY_NEW_TIMESTAMPS, JSON.stringify(newCardTimestamps));
 
-    function scheduleNewCardExpiration(idStr, delayMs = 60000) {
+    function scheduleNewCardExpiration(idStr, customDelayMs) {
+      const durationMs = getNewBadgeDurationMs();
+      if (durationMs <= 0) {
+        // Auto-clear disabled in settings
+        return;
+      }
+      const delay = customDelayMs !== undefined ? customDelayMs : durationMs;
+      if (delay <= 0) return;
+
       setTimeout(() => {
-        dismissNewBadge(idStr);
-      }, Math.max(100, delayMs));
+        if (getNewBadgeDurationMs() > 0) {
+          dismissNewBadge(idStr);
+        }
+      }, Math.max(100, delay));
     }
 
     function toggleNewBadge(idStr) {
@@ -622,7 +645,7 @@
       } else {
         newCardIds.add(key);
         newCardTimestamps[key] = Date.now();
-        scheduleNewCardExpiration(key, NEW_BADGE_DURATION_MS);
+        scheduleNewCardExpiration(key);
       }
       localStorage.setItem(KEY_NEW_IDS, JSON.stringify(Array.from(newCardIds)));
       localStorage.setItem(KEY_NEW_TIMESTAMPS, JSON.stringify(newCardTimestamps));
@@ -799,7 +822,7 @@
           if (!isInitialRun) {
             newCardIds.add(idStr);
             newCardTimestamps[idStr] = Date.now();
-            scheduleNewCardExpiration(idStr, NEW_BADGE_DURATION_MS);
+            scheduleNewCardExpiration(idStr);
             newlyDiscoveredCards.push(card);
           }
           // Add to top of tracking order list

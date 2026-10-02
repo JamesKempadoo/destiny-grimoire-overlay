@@ -148,7 +148,7 @@
       color: var(--text-muted);
     }
 
-    input[type="text"], select {
+    input[type="text"], input[type="number"], select {
       background: #09090b;
       border: 1px solid var(--border);
       color: var(--text);
@@ -160,7 +160,7 @@
       transition: border-color 0.15s ease;
     }
 
-    input[type="text"]:focus, select:focus {
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
       border-color: var(--accent-gold);
     }
 
@@ -339,6 +339,33 @@
       <div id="refresh-msg" class="message">Auto-refresh active (15s).</div>
     </div>
 
+    <!-- Cards Tracker & NEW Badge Settings Card -->
+    <div class="card">
+      <div class="card-title">Cards Tracker & NEW Badge Expiration</div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="badge-duration-select">NEW Card Badge Auto-Clear Duration</label>
+          <select id="badge-duration-select">
+            <option value="60">1 Minute (60 Seconds - Default)</option>
+            <option value="30">30 Seconds</option>
+            <option value="15">15 Seconds</option>
+            <option value="120">2 Minutes (120 Seconds)</option>
+            <option value="300">5 Minutes (300 Seconds)</option>
+            <option value="0">Off (Disabled - Click to Clear Only)</option>
+            <option value="custom">Custom Seconds...</option>
+          </select>
+        </div>
+        <div class="field" id="custom-seconds-field" style="display: none;">
+          <label for="custom-seconds-input">Custom Duration (in Seconds)</label>
+          <input type="number" id="custom-seconds-input" placeholder="e.g. 45" min="1" max="86400">
+        </div>
+      </div>
+      <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between;">
+        <button id="save-badge-duration-btn" class="btn btn-primary">Save Badge Setting</button>
+        <span id="badge-msg" class="message"></span>
+      </div>
+    </div>
+
     <!-- OBS Browser Source Configuration Card -->
     <div class="card">
       <div class="card-title">OBS / Streamlabs Browser Source</div>
@@ -471,10 +498,72 @@
       setTimeout(() => copyBtn.textContent = 'Copy URL', 2000);
     });
 
+    // NEW Badge Auto-Clear Setting Logic
+    const badgeDurationSelect = document.getElementById('badge-duration-select');
+    const customSecondsField = document.getElementById('custom-seconds-field');
+    const customSecondsInput = document.getElementById('custom-seconds-input');
+    const saveBadgeDurationBtn = document.getElementById('save-badge-duration-btn');
+    const badgeMsg = document.getElementById('badge-msg');
+
+    function loadBadgeDurationSetting() {
+      const saved = localStorage.getItem('grimoire_new_badge_duration_sec');
+      const sec = saved !== null ? parseInt(saved, 10) : 60;
+
+      const presetValues = ['60', '30', '15', '120', '300', '0'];
+      if (presetValues.includes(String(sec))) {
+        badgeDurationSelect.value = String(sec);
+        customSecondsField.style.display = 'none';
+      } else {
+        badgeDurationSelect.value = 'custom';
+        customSecondsField.style.display = 'flex';
+        customSecondsInput.value = sec;
+      }
+      updateBadgeMsg(sec);
+    }
+
+    function updateBadgeMsg(sec) {
+      if (sec === 0) {
+        badgeMsg.textContent = 'Auto-clear disabled. NEW badges remain until manually clicked or cleared.';
+      } else if (sec >= 60 && sec % 60 === 0) {
+        const mins = sec / 60;
+        badgeMsg.textContent = `NEW badges auto-clear after ${mins} minute${mins > 1 ? 's' : ''} (${sec}s).`;
+      } else {
+        badgeMsg.textContent = `NEW badges auto-clear after ${sec} seconds.`;
+      }
+    }
+
+    badgeDurationSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'custom') {
+        customSecondsField.style.display = 'flex';
+        customSecondsInput.focus();
+      } else {
+        customSecondsField.style.display = 'none';
+        updateBadgeMsg(parseInt(e.target.value, 10));
+      }
+    });
+
+    saveBadgeDurationBtn.addEventListener('click', () => {
+      let sec = 60;
+      if (badgeDurationSelect.value === 'custom') {
+        const val = parseInt(customSecondsInput.value, 10);
+        sec = isNaN(val) || val < 0 ? 0 : val;
+      } else {
+        sec = parseInt(badgeDurationSelect.value, 10);
+      }
+
+      localStorage.setItem('grimoire_new_badge_duration_sec', sec);
+      badgeMsg.className = 'message success';
+      updateBadgeMsg(sec);
+      setTimeout(() => {
+        badgeMsg.className = 'message';
+      }, 3000);
+    });
+
     // Initialize
     loadActivePlayerInfo();
     fetchLatestStats();
     setupPolling(intervalSelect.value);
+    loadBadgeDurationSetting();
   </script>
 </body>
 
