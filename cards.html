@@ -981,8 +981,11 @@
       if (e.target === loreModalOverlay) loreModalOverlay.classList.remove('active');
     });
 
-    // Initial Execution
+    // Initial Execution & 15s Auto-Polling
     fetchGrimoireCards();
+    setInterval(() => {
+      fetchGrimoireCards();
+    }, 15000);
   </script>
 </body>
 
