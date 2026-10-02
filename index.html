@@ -670,18 +670,25 @@
       return parseInt(selectedInterval, 10);
     }
 
-    function animateScore(start, end) {
+    function animateScore(targetScore) {
+      if (!scoreEl) return;
+
       if (animFrameId) {
         cancelAnimationFrame(animFrameId);
         animFrameId = null;
       }
 
-      if (start === 0 || start === end) {
-        scoreEl.textContent = end.toLocaleString();
-        currentScore = end;
+      const currentText = (scoreEl.textContent || '').replace(/,/g, '').trim();
+      const currentVal = parseInt(currentText, 10);
+      const startScore = isNaN(currentVal) ? 0 : currentVal;
+
+      if (startScore === 0 || startScore === targetScore) {
+        scoreEl.textContent = targetScore.toLocaleString();
+        currentScore = targetScore;
         return;
       }
 
+      currentScore = targetScore;
       const startTime = performance.now();
       scoreEl.classList.add('flash');
 
@@ -689,13 +696,13 @@
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / 1000, 1);
         const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-        const val = Math.floor(start + (end - start) * ease);
+        const val = Math.floor(startScore + (targetScore - startScore) * ease);
         scoreEl.textContent = val.toLocaleString();
 
         if (progress < 1) {
           animFrameId = requestAnimationFrame(update);
         } else {
-          scoreEl.textContent = end.toLocaleString();
+          scoreEl.textContent = targetScore.toLocaleString();
           animFrameId = null;
           setTimeout(() => scoreEl.classList.remove('flash'), 1000);
         }
@@ -714,7 +721,7 @@
           localStorage.setItem('grimoire_api_key', urlKey.trim());
           return urlKey.trim();
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // 2. Check localStorage saved key
       const customKey = localStorage.getItem('grimoire_api_key');
@@ -738,8 +745,7 @@
           const data = await res.json();
           if (data.success) {
             if (typeof data.grimoireScore === 'number') {
-              animateScore(currentScore, data.grimoireScore);
-              currentScore = data.grimoireScore;
+              animateScore(data.grimoireScore);
             }
             if (typeof data.cardCount === 'number') {
               cardEl.textContent = data.cardCount.toLocaleString();
@@ -761,8 +767,7 @@
         if (json.ErrorCode === 1 && json.Response?.data) {
           const score = json.Response.data.score || 0;
           const cards = json.Response.data.cardCollection?.length || 0;
-          animateScore(currentScore, score);
-          currentScore = score;
+          animateScore(score);
           cardEl.textContent = cards.toLocaleString();
         }
       } catch (err) {

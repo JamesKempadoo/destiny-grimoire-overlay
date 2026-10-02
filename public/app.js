@@ -21,22 +21,28 @@ document.addEventListener('DOMContentLoaded', () => {
   let pollIntervalId = null;
   let isFetching = false;
 
-  // Animate number count-up
-  function animateScore(start, end, duration = 1000) {
+  // Animate number count-up smoothly
+  function animateScore(targetScore, duration = 1000) {
+    if (!scoreElement) return;
+
     if (animFrameId) {
       cancelAnimationFrame(animFrameId);
       animFrameId = null;
     }
 
-    if (!scoreElement) return;
+    // Read current displayed number from DOM
+    const currentText = (scoreElement.textContent || '').replace(/,/g, '').trim();
+    const currentVal = parseInt(currentText, 10);
+    const startScore = isNaN(currentVal) ? 0 : currentVal;
 
-    // On initial load, display score immediately without animating from 0
-    if (start === 0 || start === end) {
-      scoreElement.textContent = end.toLocaleString();
-      currentScore = end;
+    // On initial load or if score hasn't changed, display score immediately
+    if (startScore === 0 || startScore === targetScore) {
+      scoreElement.textContent = targetScore.toLocaleString();
+      currentScore = targetScore;
       return;
     }
 
+    currentScore = targetScore;
     const startTime = performance.now();
     scoreElement.classList.add('updated-flash');
 
@@ -46,14 +52,14 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Easing function (easeOutExpo)
       const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      const val = Math.floor(start + (end - start) * easeProgress);
+      const val = Math.floor(startScore + (targetScore - startScore) * easeProgress);
 
       scoreElement.textContent = val.toLocaleString();
 
       if (progress < 1) {
         animFrameId = requestAnimationFrame(updateNumber);
       } else {
-        scoreElement.textContent = end.toLocaleString();
+        scoreElement.textContent = targetScore.toLocaleString();
         animFrameId = null;
         setTimeout(() => scoreElement.classList.remove('updated-flash'), 1000);
       }
@@ -79,8 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         if (typeof data.grimoireScore === 'number' && scoreElement) {
           const newScore = data.grimoireScore;
-          animateScore(currentScore, newScore);
-          currentScore = newScore;
+          animateScore(newScore);
         }
 
         if (typeof data.cardCount === 'number' && cardElement) {

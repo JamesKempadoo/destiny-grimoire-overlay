@@ -662,18 +662,25 @@
       return parseInt(selectedInterval, 10);
     }
 
-    function animateScore(start, end) {
+    function animateScore(targetScore) {
+      if (!scoreEl) return;
+
       if (animFrameId) {
         cancelAnimationFrame(animFrameId);
         animFrameId = null;
       }
 
-      if (start === 0 || start === end) {
-        scoreEl.textContent = end.toLocaleString();
-        currentScore = end;
+      const currentText = (scoreEl.textContent || '').replace(/,/g, '').trim();
+      const currentVal = parseInt(currentText, 10);
+      const startScore = isNaN(currentVal) ? 0 : currentVal;
+
+      if (startScore === 0 || startScore === targetScore) {
+        scoreEl.textContent = targetScore.toLocaleString();
+        currentScore = targetScore;
         return;
       }
 
+      currentScore = targetScore;
       const startTime = performance.now();
       scoreEl.classList.add('flash');
 
@@ -681,13 +688,13 @@
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / 1000, 1);
         const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-        const val = Math.floor(start + (end - start) * ease);
+        const val = Math.floor(startScore + (targetScore - startScore) * ease);
         scoreEl.textContent = val.toLocaleString();
 
         if (progress < 1) {
           animFrameId = requestAnimationFrame(update);
         } else {
-          scoreEl.textContent = end.toLocaleString();
+          scoreEl.textContent = targetScore.toLocaleString();
           animFrameId = null;
           setTimeout(() => scoreEl.classList.remove('flash'), 1000);
         }
@@ -695,7 +702,28 @@
       animFrameId = requestAnimationFrame(update);
     }
 
-    const BUNGIE_API_KEY = '1e930b9b177d43b192c80baf7de61d11';
+    const INJECTED_BUNGIE_API_KEY = '__BUNGIE_API_KEY__';
+
+    function getApiKey() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlKey = urlParams.get('apikey') || urlParams.get('api_key') || urlParams.get('key');
+        if (urlKey && urlKey.trim()) {
+          localStorage.setItem('grimoire_api_key', urlKey.trim());
+          return urlKey.trim();
+        }
+      } catch (e) {}
+
+      const customKey = localStorage.getItem('grimoire_api_key');
+      if (customKey && customKey.trim()) return customKey.trim();
+
+      if (INJECTED_BUNGIE_API_KEY && !INJECTED_BUNGIE_API_KEY.startsWith('__')) {
+        return INJECTED_BUNGIE_API_KEY;
+      }
+
+      return '';
+    }
+
     let activeMembershipId = localStorage.getItem('grimoire_membership_id') || '4611686018558160946';
 
     async function fetchScore() {
@@ -706,8 +734,7 @@
           const data = await res.json();
           if (data.success) {
             if (typeof data.grimoireScore === 'number') {
-              animateScore(currentScore, data.grimoireScore);
-              currentScore = data.grimoireScore;
+              animateScore(data.grimoireScore);
             }
             if (typeof data.cardCount === 'number') {
               cardEl.textContent = data.cardCount.toLocaleString();
@@ -723,14 +750,13 @@
         const platform = selectedPlatform || '1';
         const directUrl = `https://www.bungie.net/Platform/Destiny/Vanguard/Grimoire/${platform}/${activeMembershipId}/?_t=` + Date.now();
         const res = await fetch(directUrl, {
-          headers: { 'X-API-Key': BUNGIE_API_KEY }
+          headers: { 'X-API-Key': getApiKey() }
         });
         const json = await res.json();
         if (json.ErrorCode === 1 && json.Response?.data) {
           const score = json.Response.data.score || 0;
           const cards = json.Response.data.cardCollection?.length || 0;
-          animateScore(currentScore, score);
-          currentScore = score;
+          animateScore(score);
           cardEl.textContent = cards.toLocaleString();
         }
       } catch (err) {

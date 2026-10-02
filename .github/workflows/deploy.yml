@@ -30,7 +30,7 @@ jobs:
           BUNGIE_API_KEY: ${{ secrets.BUNGIE_API_KEY }}
         run: |
           if [ -n "$BUNGIE_API_KEY" ]; then
-            sed -i "s/__BUNGIE_API_KEY__/$BUNGIE_API_KEY/g" index.html
+            sed -i "s/__BUNGIE_API_KEY__/$BUNGIE_API_KEY/g" index.html cards.html stream.html public/*.html || true
           fi
 
       - name: Setup Pages

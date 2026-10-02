@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Destiny Grimoire - Obtained Cards Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: #141720;
+      --card-border: rgba(255, 215, 0, 0.25);
+      --border: #27272a;
+      --border-hover: #3f3f46;
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --gold: #ffd700;
+      --gold-glow: rgba(255, 215, 0, 0.35);
+      --success: #22c55e;
+      --new-glow: rgba(34, 197, 94, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 24px 16px;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Navigation & Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid var(--card-border);
+      padding-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .title {
+      font-family: 'VT323', monospace;
+      font-size: 2.2rem;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      line-height: 1;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      background: #18181b;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 215, 0, 0.15);
+      border-color: var(--gold);
+      color: #ffffff;
+    }
+
+    .nav-btn.active {
+      background: var(--gold);
+      color: #000000;
+      font-weight: 600;
+      border-color: var(--gold);
+    }
+
+    /* Live Stats Summary Bar */
+    .summary-card {
+      background: linear-gradient(135deg, rgba(20, 23, 32, 0.9) 0%, rgba(10, 14, 22, 0.95) 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      font-family: 'VT323', monospace;
+      font-size: 2.4rem;
+      color: var(--gold);
+      line-height: 1;
+      text-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    /* Toolbar & Search Controls */
+    .controls-card {
+      background: #141720;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 220px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: #09090b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .search-box input:focus {
+      border-color: var(--gold);
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    select {
+      background: #09090b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:focus {
+      border-color: var(--gold);
+    }
+
+    .btn {
+      background: #27272a;
+      color: var(--text);
+      border: 1px solid var(--border-hover);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: #000000;
+      border: none;
+      font-weight: 600;
+    }
+
+    .btn-gold:hover {
+      background: #ffe57f;
+    }
+
+    /* Notification Banner */
+    .toast-banner {
+      display: none;
+      background: linear-gradient(90deg, rgba(34, 197, 94, 0.2) 0%, rgba(10, 14, 22, 0.9) 100%);
+      border: 1px solid var(--success);
+      border-radius: 8px;
+      padding: 12px 18px;
+      color: #ffffff;
+      font-size: 0.9rem;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
+      animation: slideInDown 0.4s ease-out;
+    }
+
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .card-item:hover {
+      transform: translateY(-2px);
+      border-color: var(--gold);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 215, 0, 0.2);
+    }
+
+    .card-item.new-card {
+      border: 1.5px solid var(--success);
+      box-shadow: 0 0 16px var(--new-glow);
+      animation: highlightPulse 2s ease-in-out 3;
+    }
+
+    @keyframes highlightPulse {
+      0% { box-shadow: 0 0 16px var(--new-glow); }
+      50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.8); }
+      100% { box-shadow: 0 0 16px var(--new-glow); }
+    }
+
+    .new-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--success);
+      color: #000000;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.05em;
+      box-shadow: 0 0 8px var(--success);
+      transition: opacity 0.5s ease;
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      padding-right: 45px;
+    }
+
+    .card-title-text {
+      font-family: 'VT323', monospace;
+      font-size: 1.4rem;
+      color: var(--gold);
+      line-height: 1.1;
+      letter-spacing: 0.03em;
+    }
+
+    .points-tag {
+      font-family: 'VT323', monospace;
+      font-size: 1.1rem;
+      color: #ffffff;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+
+    .card-body-content {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .card-img {
+      width: 54px;
+      height: 54px;
+      background: #09090b;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card-intro {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      white-space: pre-wrap;
+    }
+
+    .card-footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 8px;
+      margin-top: auto;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .read-more-btn {
+      background: transparent;
+      border: none;
+      color: var(--gold);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .read-more-btn:hover {
+      color: #ffffff;
+    }
+
+    /* Empty state */
+    .empty-state {
+      grid-column: 1 / -1;
+      background: var(--card-bg);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 48px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    /* Lore Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .lore-modal {
+      background: #141720;
+      border: 1.5px solid var(--gold);
+      border-radius: 14px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-family: 'VT323', monospace;
+      font-size: 1.8rem;
+      color: var(--gold);
+    }
+
+    .close-modal {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .close-modal:hover {
+      color: #ffffff;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #e4e4e7;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div>
+          <h1 class="title">DESTINY GRIMOIRE CARDS</h1>
+          <div class="subtitle" id="player-subtitle">Obtained Cards Tracker</div>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-btn">Stream Overlay</a>
+        <a href="settings.html" class="nav-btn">Settings</a>
+        <a href="cards.html" class="nav-btn active">Cards Tracker</a>
+      </nav>
+    </header>
+
+    <!-- Stats Summary Card -->
+    <div class="summary-card">
+      <div class="stat-item">
+        <div id="stat-total-cards" class="stat-value">0</div>
+        <div class="stat-label">Total Cards Obtained</div>
+      </div>
+      <div class="stat-item">
+        <div id="stat-total-score" class="stat-value">0</div>
+        <div class="stat-label">Grimoire Score</div>
+      </div>
+      <div class="stat-item">
+        <div id="stat-new-count" class="stat-value" style="color: var(--success);">0</div>
+        <div class="stat-label">Newly Unlocked</div>
+      </div>
+    </div>
+
+    <!-- Toast Notification for New Cards -->
+    <div id="toast-banner" class="toast-banner">
+      <span id="toast-message">NEW CARD DISCOVERED</span>
+      <button class="btn btn-gold" id="clear-new-btn" style="padding: 4px 10px; font-size: 0.75rem;">Clear Badges</button>
+    </div>
+
+    <!-- Controls Toolbar -->
+    <div class="controls-card">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search cards by name or lore...">
+      </div>
+
+      <div class="filter-group">
+        <select id="sort-select">
+          <option value="newest_unlocked">Newest Unlocked (Top)</option>
+          <option value="name_asc">Card Name (A-Z)</option>
+          <option value="points_desc">Highest Points</option>
+          <option value="points_asc">Lowest Points</option>
+        </select>
+
+        <button id="refresh-btn" class="btn">Refresh</button>
+        <button id="reset-cache-btn" class="btn" title="Reset tracking cache">Reset Cache</button>
+      </div>
+    </div>
+
+    <!-- Cards Grid Container -->
+    <div id="cards-grid" class="cards-grid">
+      <div class="empty-state">
+        <p>Fetching Grimoire card collection from Bungie API...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lore Modal Window -->
+  <div id="lore-modal-overlay" class="modal-overlay">
+    <div class="lore-modal">
+      <div class="modal-header">
+        <h2 id="modal-card-title" class="modal-title">Card Title</h2>
+        <button id="close-modal-btn" class="close-modal">&times;</button>
+      </div>
+      <div id="modal-card-body" class="modal-body">
+        Card lore text will appear here...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cardsGrid = document.getElementById('cards-grid');
+    const statTotalCards = document.getElementById('stat-total-cards');
+    const statTotalScore = document.getElementById('stat-total-score');
+    const statNewCount = document.getElementById('stat-new-count');
+    const playerSubtitle = document.getElementById('player-subtitle');
+
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const resetCacheBtn = document.getElementById('reset-cache-btn');
+    const clearNewBtn = document.getElementById('clear-new-btn');
+
+    const toastBanner = document.getElementById('toast-banner');
+    const toastMessage = document.getElementById('toast-message');
+
+    const loreModalOverlay = document.getElementById('lore-modal-overlay');
+    const modalCardTitle = document.getElementById('modal-card-title');
+    const modalCardBody = document.getElementById('modal-card-body');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    // Storage Keys
+    const KEY_KNOWN_IDS = 'grimoire_known_card_ids';
+    const KEY_NEW_IDS = 'grimoire_new_card_ids';
+    const KEY_NEW_TIMESTAMPS = 'grimoire_new_card_timestamps';
+    const KEY_CARD_ORDER = 'grimoire_card_order';
+    const KEY_CACHED_CARDS = 'grimoire_cached_cards_data';
+
+    let allCards = [];
+    let knownCardIds = new Set(JSON.parse(localStorage.getItem(KEY_KNOWN_IDS) || '[]'));
+    let newCardIds = new Set(JSON.parse(localStorage.getItem(KEY_NEW_IDS) || '[]'));
+    let newCardTimestamps = JSON.parse(localStorage.getItem(KEY_NEW_TIMESTAMPS) || '{}');
+    let cardOrderList = JSON.parse(localStorage.getItem(KEY_CARD_ORDER) || '[]');
+    let isFetching = false;
+
+    // Load initial cached card data from LocalStorage immediately for zero latency
+    try {
+      const cached = localStorage.getItem(KEY_CACHED_CARDS);
+      if (cached) {
+        allCards = JSON.parse(cached);
+        renderCards();
+      }
+    } catch (e) {}
+
+    // Check & schedule auto-expiration for NEW card badges after 60 seconds (1 minute)
+    const NEW_BADGE_DURATION_MS = 60000;
+    Object.keys(newCardTimestamps).forEach(idStr => {
+      const elapsed = Date.now() - (newCardTimestamps[idStr] || 0);
+      if (elapsed >= NEW_BADGE_DURATION_MS) {
+        newCardIds.delete(idStr);
+        delete newCardTimestamps[idStr];
+      } else {
+        scheduleNewCardExpiration(idStr, NEW_BADGE_DURATION_MS - elapsed);
+      }
+    });
+    localStorage.setItem(KEY_NEW_IDS, JSON.stringify(Array.from(newCardIds)));
+    localStorage.setItem(KEY_NEW_TIMESTAMPS, JSON.stringify(newCardTimestamps));
+
+    function scheduleNewCardExpiration(idStr, delayMs = 60000) {
+      setTimeout(() => {
+        dismissNewBadge(idStr);
+      }, Math.max(100, delayMs));
+    }
+
+    function toggleNewBadge(idStr) {
+      const key = String(idStr);
+      if (newCardIds.has(key)) {
+        newCardIds.delete(key);
+        delete newCardTimestamps[key];
+      } else {
+        newCardIds.add(key);
+        newCardTimestamps[key] = Date.now();
+        scheduleNewCardExpiration(key, NEW_BADGE_DURATION_MS);
+      }
+      localStorage.setItem(KEY_NEW_IDS, JSON.stringify(Array.from(newCardIds)));
+      localStorage.setItem(KEY_NEW_TIMESTAMPS, JSON.stringify(newCardTimestamps));
+      statNewCount.textContent = newCardIds.size.toLocaleString();
+      if (newCardIds.size === 0) {
+        toastBanner.style.display = 'none';
+      }
+      renderCards();
+    }
+
+    function dismissNewBadge(idStr) {
+      const key = String(idStr);
+      if (newCardIds.has(key)) {
+        newCardIds.delete(key);
+        delete newCardTimestamps[key];
+        localStorage.setItem(KEY_NEW_IDS, JSON.stringify(Array.from(newCardIds)));
+        localStorage.setItem(KEY_NEW_TIMESTAMPS, JSON.stringify(newCardTimestamps));
+        statNewCount.textContent = newCardIds.size.toLocaleString();
+        if (newCardIds.size === 0) {
+          toastBanner.style.display = 'none';
+        }
+        renderCards();
+      }
+    }
+
+    const INJECTED_BUNGIE_API_KEY = '__BUNGIE_API_KEY__';
+
+    function getApiKey() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlKey = urlParams.get('apikey') || urlParams.get('api_key') || urlParams.get('key');
+        if (urlKey && urlKey.trim()) {
+          localStorage.setItem('grimoire_api_key', urlKey.trim());
+          return urlKey.trim();
+        }
+      } catch (e) {}
+
+      const customKey = localStorage.getItem('grimoire_api_key');
+      if (customKey && customKey.trim()) return customKey.trim();
+
+      if (INJECTED_BUNGIE_API_KEY && !INJECTED_BUNGIE_API_KEY.startsWith('__')) {
+        return INJECTED_BUNGIE_API_KEY;
+      }
+
+      return '';
+    }
+
+    let activeMembershipId = localStorage.getItem('grimoire_membership_id') || '4611686018558160946';
+    let activePlatform = '1';
+
+    function extractDefinitionsMap(response) {
+      const map = new Map();
+      if (!response) return map;
+
+      const res = response.Response || response;
+      const dataObj = res.data || {};
+
+      const defs = res.definitions?.cards ||
+                   res.definitions?.grimoireCards ||
+                   res.cardDefinitions ||
+                   dataObj.cardDefinitions ||
+                   res.definitions ||
+                   {};
+
+      if (Array.isArray(defs)) {
+        defs.forEach(def => {
+          if (def && (def.cardId || def.id)) {
+            const id = String(def.cardId || def.id);
+            map.set(id, def);
+          }
+        });
+      } else if (typeof defs === 'object' && defs !== null) {
+        Object.keys(defs).forEach(key => {
+          const def = defs[key];
+          if (def && typeof def === 'object') {
+            const id = String(def.cardId || key);
+            map.set(id, def);
+          }
+        });
+      }
+
+      return map;
+    }
+
+    async function fetchGrimoireCards() {
+      if (isFetching) return;
+      isFetching = true;
+      refreshBtn.classList.add('spinning');
+
+      try {
+        let fetchedCards = [];
+        let score = 0;
+        let playerName = '';
+
+        // 1. Try Local Proxy Endpoint (/api/cards)
+        try {
+          const res = await fetch('/api/cards?_t=' + Date.now());
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.cards)) {
+              fetchedCards = data.cards;
+              score = data.grimoireScore || 0;
+              playerName = data.displayName || 'Player';
+              activePlatform = data.membershipType || '1';
+            }
+          }
+        } catch (e) {}
+
+        // 2. Direct Bungie API Fallback (for static hosting on GitHub Pages)
+        if (!fetchedCards.length) {
+          try {
+            const platform = activePlatform || '1';
+            const directUrl = `https://www.bungie.net/Platform/Destiny/Vanguard/Grimoire/${platform}/${activeMembershipId}/?definitions=true&_t=` + Date.now();
+            const res = await fetch(directUrl, {
+              headers: { 'X-API-Key': getApiKey() }
+            });
+            const json = await res.json();
+            if (json.ErrorCode === 1 && json.Response?.data) {
+              score = json.Response.data.score || 0;
+              const cardCollection = json.Response.data.cardCollection || [];
+              const defMap = extractDefinitionsMap(json);
+
+              fetchedCards = cardCollection.map(card => {
+                const idStr = String(card.cardId);
+                const def = defMap.get(idStr) || card;
+                let icon = null;
+                if (def.icon?.sheetPath) {
+                  icon = def.icon.sheetPath.startsWith('http') ? def.icon.sheetPath : `https://www.bungie.net${def.icon.sheetPath}`;
+                } else if (def.highGraphic?.image?.sheetPath) {
+                  icon = def.highGraphic.image.sheetPath.startsWith('http') ? def.highGraphic.image.sheetPath : `https://www.bungie.net${def.highGraphic.image.sheetPath}`;
+                }
+
+                const name = def.cardName || def.name || def.title || def.displayName || `Card #${card.cardId}`;
+
+                return {
+                  cardId: card.cardId,
+                  points: card.points ?? def.grimoirePointValue ?? 0,
+                  cardName: name,
+                  cardIntro: def.cardIntro || '',
+                  cardDescription: def.cardDescription || '',
+                  icon: icon
+                };
+              });
+            }
+          } catch (err) {
+            console.error('Direct Bungie API fetch error:', err);
+          }
+        }
+
+        if (fetchedCards.length) {
+          processIncomingCards(fetchedCards, score, playerName);
+        } else if (!allCards.length) {
+          cardsGrid.innerHTML = `
+            <div class="empty-state">
+              <p>No Grimoire cards found. Check player configuration in settings.</p>
+            </div>
+          `;
+        }
+      } finally {
+        isFetching = false;
+        refreshBtn.classList.remove('spinning');
+      }
+    }
+
+    function processIncomingCards(fetchedCards, score, playerName) {
+      let newlyDiscoveredCards = [];
+      const isInitialRun = knownCardIds.size === 0;
+
+      // Check for newly obtained cards
+      fetchedCards.forEach(card => {
+        const idStr = String(card.cardId);
+        if (!knownCardIds.has(idStr)) {
+          knownCardIds.add(idStr);
+          if (!isInitialRun) {
+            newCardIds.add(idStr);
+            newCardTimestamps[idStr] = Date.now();
+            scheduleNewCardExpiration(idStr, NEW_BADGE_DURATION_MS);
+            newlyDiscoveredCards.push(card);
+          }
+          // Add to top of tracking order list
+          cardOrderList.unshift(idStr);
+        }
+      });
+
+      // Update stored cards array
+      allCards = fetchedCards;
+
+      // Save persistent state to LocalStorage
+      localStorage.setItem(KEY_KNOWN_IDS, JSON.stringify(Array.from(knownCardIds)));
+      localStorage.setItem(KEY_NEW_IDS, JSON.stringify(Array.from(newCardIds)));
+      localStorage.setItem(KEY_NEW_TIMESTAMPS, JSON.stringify(newCardTimestamps));
+      localStorage.setItem(KEY_CARD_ORDER, JSON.stringify(cardOrderList));
+      localStorage.setItem(KEY_CACHED_CARDS, JSON.stringify(allCards));
+
+      // Update Summary Readouts
+      statTotalCards.textContent = allCards.length.toLocaleString();
+      statTotalScore.textContent = score.toLocaleString();
+      statNewCount.textContent = newCardIds.size.toLocaleString();
+
+      if (playerName) {
+        playerSubtitle.textContent = `Tracking cards for ${playerName}`;
+      }
+
+      // Show Toast Notification if new cards arrived
+      if (newlyDiscoveredCards.length > 0) {
+        const latestCard = newlyDiscoveredCards[0];
+        toastMessage.textContent = `NEW CARD OBTAINED: "${escapeHtml(latestCard.cardName)}" (+${latestCard.points} PTS)!`;
+        toastBanner.style.display = 'flex';
+      }
+
+      renderCards();
+    }
+
+    function renderCards() {
+      const query = (searchInput.value || '').toLowerCase().trim();
+      const sortMode = sortSelect.value;
+
+      let displayCards = [...allCards];
+
+      // Search Filter
+      if (query) {
+        displayCards = displayCards.filter(c =>
+          c.cardName.toLowerCase().includes(query) ||
+          (c.cardDescription && c.cardDescription.toLowerCase().includes(query)) ||
+          (c.cardIntro && c.cardIntro.toLowerCase().includes(query)) ||
+          String(c.cardId).includes(query)
+        );
+      }
+
+      // Sorting Logic
+      if (sortMode === 'newest_unlocked') {
+        const orderMap = new Map();
+        cardOrderList.forEach((id, index) => orderMap.set(String(id), index));
+        displayCards.sort((a, b) => {
+          const indexA = orderMap.has(String(a.cardId)) ? orderMap.get(String(a.cardId)) : 999999;
+          const indexB = orderMap.has(String(b.cardId)) ? orderMap.get(String(b.cardId)) : 999999;
+          return indexA - indexB;
+        });
+      } else if (sortMode === 'name_asc') {
+        displayCards.sort((a, b) => a.cardName.localeCompare(b.cardName));
+      } else if (sortMode === 'points_desc') {
+        displayCards.sort((a, b) => (b.points || 0) - (a.points || 0));
+      } else if (sortMode === 'points_asc') {
+        displayCards.sort((a, b) => (a.points || 0) - (b.points || 0));
+      }
+
+      if (!displayCards.length) {
+        cardsGrid.innerHTML = `
+          <div class="empty-state">
+            <p>No Grimoire cards match "${searchInput.value}".</p>
+          </div>
+        `;
+        return;
+      }
+
+      cardsGrid.innerHTML = displayCards.map(card => {
+        const isNew = newCardIds.has(String(card.cardId));
+        const iconHtml = card.icon
+          ? `<img src="${card.icon}" alt="${card.cardName}" class="card-img" onerror="this.remove()">`
+          : '';
+
+        const desc = card.cardIntro || card.cardDescription || 'Obtained in Destiny 1 Grimoire collection.';
+
+        return `
+          <div class="card-item ${isNew ? 'new-card' : ''}" data-id="${card.cardId}" onclick="toggleNewBadge('${card.cardId}')" style="cursor: pointer;" title="${isNew ? 'Click to clear NEW badge' : 'Click to mark as NEW'}">
+            ${isNew ? `<span class="new-badge" onclick="event.stopPropagation(); toggleNewBadge('${card.cardId}')" title="Click to clear NEW badge">NEW CARD</span>` : ''}
+            <div class="card-header-row">
+              <span class="card-title-text">${escapeHtml(card.cardName)}</span>
+              <span class="points-tag">+${card.points || 0} PTS</span>
+            </div>
+            <div class="card-body-content">
+              ${iconHtml}
+              <div class="card-intro">${escapeHtml(desc)}</div>
+            </div>
+            <div class="card-footer-row">
+              <span>Card ID: ${card.cardId}</span>
+              ${(card.cardDescription || card.cardIntro) ? `<button class="read-more-btn" onclick="event.stopPropagation(); openLoreModal('${card.cardId}')">Read Lore</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openLoreModal(cardId) {
+      const card = allCards.find(c => String(c.cardId) === String(cardId));
+      if (!card) return;
+
+      modalCardTitle.textContent = `${escapeHtml(card.cardName)} (+${card.points || 0} PTS)`;
+      modalCardBody.innerHTML = `
+        <div style="color: var(--gold); font-size: 0.85rem; margin-bottom: 12px;">CARD ID: ${card.cardId}</div>
+        <p style="white-space: pre-line;">${escapeHtml(card.cardDescription || card.cardIntro || 'No lore description available.')}</p>
+      `;
+      loreModalOverlay.classList.add('active');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      try {
+        const parser = new DOMParser();
+        const decoded = parser.parseFromString(str, 'text/html').body.textContent || str;
+        return decoded
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      } catch (e) {
+        return str
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+    }
+
+    // Event Listeners
+    searchInput.addEventListener('input', renderCards);
+    sortSelect.addEventListener('change', renderCards);
+
+    refreshBtn.addEventListener('click', () => {
+      fetchGrimoireCards();
+    });
+
+    clearNewBtn.addEventListener('click', () => {
+      newCardIds.clear();
+      newCardTimestamps = {};
+      localStorage.setItem(KEY_NEW_IDS, '[]');
+      localStorage.setItem(KEY_NEW_TIMESTAMPS, '{}');
+      statNewCount.textContent = '0';
+      toastBanner.style.display = 'none';
+      renderCards();
+    });
+
+    resetCacheBtn.addEventListener('click', () => {
+      if (confirm('Reset Grimoire card tracker cache and clear newly unlocked badges?')) {
+        localStorage.removeItem(KEY_KNOWN_IDS);
+        localStorage.removeItem(KEY_NEW_IDS);
+        localStorage.removeItem(KEY_NEW_TIMESTAMPS);
+        localStorage.removeItem(KEY_CARD_ORDER);
+        localStorage.removeItem(KEY_CACHED_CARDS);
+        knownCardIds.clear();
+        newCardIds.clear();
+        newCardTimestamps = {};
+        cardOrderList = [];
+        allCards = [];
+        statNewCount.textContent = '0';
+        toastBanner.style.display = 'none';
+        fetchGrimoireCards();
+      }
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      loreModalOverlay.classList.remove('active');
+    });
+
+    loreModalOverlay.addEventListener('click', (e) => {
+      if (e.target === loreModalOverlay) loreModalOverlay.classList.remove('active');
+    });
+
+    // Initial Execution
+    fetchGrimoireCards();
+  </script>
+</body>
+
+</html>

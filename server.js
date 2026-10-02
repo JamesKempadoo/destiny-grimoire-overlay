@@ -19,7 +19,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const PORT = process.env.PORT || 3000;
-const BUNGIE_API_KEY = process.env.BUNGIE_API_KEY || '1e930b9b177d43b192c80baf7de61d11';
+const BUNGIE_API_KEY = process.env.BUNGIE_API_KEY || '';
 
 // Active Player State
 let activePlayer = {
@@ -132,6 +132,105 @@ async function getGrimoireScore() {
   }
 }
 
+function extractDefinitionsMap(response) {
+  const map = new Map();
+  if (!response) return map;
+
+  const res = response.Response || response;
+  const dataObj = res.data || {};
+
+  const defs = res.definitions?.cards ||
+               res.definitions?.grimoireCards ||
+               res.cardDefinitions ||
+               dataObj.cardDefinitions ||
+               res.definitions ||
+               {};
+
+  if (Array.isArray(defs)) {
+    defs.forEach(def => {
+      if (def && (def.cardId || def.id)) {
+        const id = String(def.cardId || def.id);
+        map.set(id, def);
+      }
+    });
+  } else if (typeof defs === 'object' && defs !== null) {
+    Object.keys(defs).forEach(key => {
+      const def = defs[key];
+      if (def && typeof def === 'object') {
+        const id = String(def.cardId || key);
+        map.set(id, def);
+      }
+    });
+  }
+
+  return map;
+}
+
+function decodeHtmlEntities(str) {
+  if (!str) return '';
+  return str
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/<br\s*\/?>/gi, '\n');
+}
+
+async function getGrimoireCards() {
+  try {
+    const grimoireUrl = `https://www.bungie.net/Platform/Destiny/Vanguard/Grimoire/${activePlayer.membershipType}/${activePlayer.membershipId}/?definitions=true`;
+    const grimoireRes = await fetchBungieData(grimoireUrl);
+
+    if (grimoireRes.ErrorCode !== 1) {
+      throw new Error(grimoireRes.Message || 'Bungie API error');
+    }
+
+    const dataObj = grimoireRes.Response?.data || {};
+    const grimoireScore = dataObj.score ?? 0;
+    const cardCollection = dataObj.cardCollection || [];
+    const defMap = extractDefinitionsMap(grimoireRes);
+
+    const cards = cardCollection.map(card => {
+      const idStr = String(card.cardId);
+      const def = defMap.get(idStr) || card;
+      let icon = null;
+      if (def.icon && def.icon.sheetPath) {
+        icon = def.icon.sheetPath.startsWith('http') ? def.icon.sheetPath : `https://www.bungie.net${def.icon.sheetPath}`;
+      } else if (def.highGraphic && def.highGraphic.image && def.highGraphic.image.sheetPath) {
+        icon = def.highGraphic.image.sheetPath.startsWith('http') ? def.highGraphic.image.sheetPath : `https://www.bungie.net${def.highGraphic.image.sheetPath}`;
+      }
+
+      const rawCardName = def.cardName || def.name || def.title || def.displayName || `Card #${card.cardId}`;
+
+      return {
+        cardId: card.cardId,
+        score: card.score || 0,
+        points: card.points ?? def.grimoirePointValue ?? 0,
+        cardName: decodeHtmlEntities(rawCardName),
+        cardIntro: decodeHtmlEntities(def.cardIntro || ''),
+        cardDescription: decodeHtmlEntities(def.cardDescription || ''),
+        icon: icon,
+        themeId: def.themeId || 'General'
+      };
+    });
+
+    return {
+      success: true,
+      grimoireScore,
+      cardCount: cards.length,
+      cards,
+      lastUpdated: new Date().toISOString(),
+      displayName: activePlayer.displayName,
+      membershipId: activePlayer.membershipId,
+      membershipType: activePlayer.membershipType
+    };
+  } catch (err) {
+    console.error('Error fetching Grimoire cards:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // MIME types for static files
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -162,6 +261,16 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     const result = await getGrimoireScore();
+    res.writeHead(result.success ? 200 : 500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  if (reqUrl === '/api/cards') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    const result = await getGrimoireCards();
     res.writeHead(result.success ? 200 : 500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
     return;
@@ -203,6 +312,8 @@ const server = http.createServer(async (req, res) => {
     targetFile = 'index.html';
   } else if (reqUrl === '/settings') {
     targetFile = 'settings.html';
+  } else if (reqUrl === '/cards') {
+    targetFile = 'cards.html';
   }
 
   const sanitizedTarget = targetFile.replace(/^\//, '');
